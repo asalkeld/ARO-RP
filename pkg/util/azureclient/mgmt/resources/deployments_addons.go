@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	mgmtresources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
+	mgmtresources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-07-01/features"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 

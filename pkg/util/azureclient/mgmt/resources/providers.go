@@ -4,7 +4,7 @@ package resources
 // Licensed under the Apache License 2.0.
 
 import (
-	mgmtresources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
+	mgmtresources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-07-01/features"
 	"github.com/Azure/go-autorest/autorest"
 )
 

@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/v7.0/keyvault"
-	mgmtresources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
+	mgmtresources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-07-01/features"
 	"github.com/Azure/go-autorest/autorest/to"
 
 	"github.com/Azure/ARO-RP/pkg/deploy/generator"
@@ -28,7 +28,7 @@ func (d *deployer) PreDeploy(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	_, err = d.groups.CreateOrUpdate(ctx, d.config.ResourceGroupName, mgmtresources.Group{
+	_, err = d.groups.CreateOrUpdate(ctx, d.config.ResourceGroupName, mgmtresources.ResourceGroup{
 		Location: &d.config.Location,
 	})
 	if err != nil {

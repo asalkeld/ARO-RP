@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/Azure/ARO-RP/pkg/frontend/kubeactions"
 	"github.com/Azure/ARO-RP/pkg/frontend/middleware"
 	"github.com/Azure/ARO-RP/pkg/metrics"
+	"github.com/Azure/ARO-RP/pkg/util/azureclient/mgmt/resources"
 	"github.com/Azure/ARO-RP/pkg/util/bucket"
 	"github.com/Azure/ARO-RP/pkg/util/clusterdata"
 	"github.com/Azure/ARO-RP/pkg/util/heartbeat"
@@ -43,6 +45,7 @@ type frontend struct {
 
 	ocEnricher  clusterdata.OpenShiftClusterEnricher
 	kubeActions kubeactions.Interface
+	resources   resources.ResourcesClient
 
 	l net.Listener
 	s *http.Server
@@ -60,6 +63,11 @@ type Runnable interface {
 // NewFrontend returns a new runnable frontend
 func NewFrontend(ctx context.Context, baseLog *logrus.Entry, _env env.Interface, db *database.Database, apis map[string]*api.Version, m metrics.Interface, kubeActions kubeactions.Interface) (Runnable, error) {
 	var err error
+	fpAuthorizer, err := _env.FPAuthorizer(_env.TenantID(), azure.PublicCloud.ResourceManagerEndpoint)
+	if err != nil {
+		return nil, err
+	}
+	resourcesClient := resources.NewResourcesClient(_env.SubscriptionID(), fpAuthorizer)
 
 	f := &frontend{
 		baseLog:     baseLog,
@@ -68,6 +76,7 @@ func NewFrontend(ctx context.Context, baseLog *logrus.Entry, _env env.Interface,
 		apis:        apis,
 		m:           m,
 		kubeActions: kubeActions,
+		resources:   resourcesClient,
 
 		ocEnricher: clusterdata.NewBestEffortEnricher(baseLog, _env),
 
@@ -182,6 +191,12 @@ func (f *frontend) authenticatedRoutes(r *mux.Router) {
 		Subrouter()
 
 	s.Methods(http.MethodPost).HandlerFunc(f.postAdminOpenShiftClusterUpgrade).Name("postAdminOpenShiftClusterUpgrade")
+
+	s = r.
+		Path("/admin/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}/resources").
+		Subrouter()
+
+	s.Methods(http.MethodGet).HandlerFunc(f.listAdminOpenShiftClusterResources).Name("listAdminOpenShiftClusterResources")
 
 	// Operations
 	s = r.

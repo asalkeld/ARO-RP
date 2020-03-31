@@ -6,7 +6,7 @@ package resources
 import (
 	"context"
 
-	mgmtresources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
+	mgmtresources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-07-01/features"
 )
 
 // ProvidersClientAddons is a minimal interface for azure ProvidersClient

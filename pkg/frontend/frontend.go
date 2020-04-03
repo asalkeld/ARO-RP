@@ -62,7 +62,6 @@ type Runnable interface {
 
 // NewFrontend returns a new runnable frontend
 func NewFrontend(ctx context.Context, baseLog *logrus.Entry, _env env.Interface, db *database.Database, apis map[string]*api.Version, m metrics.Interface, kubeActions kubeactions.Interface) (Runnable, error) {
-	var err error
 	fpAuthorizer, err := _env.FPAuthorizer(_env.TenantID(), azure.PublicCloud.ResourceManagerEndpoint)
 	if err != nil {
 		return nil, err
@@ -82,15 +81,22 @@ func NewFrontend(ctx context.Context, baseLog *logrus.Entry, _env env.Interface,
 
 		bucketAllocator: &bucket.Random{},
 	}
-
-	l, err := f.env.Listen()
+	err = f.setupListener(ctx)
 	if err != nil {
 		return nil, err
+	}
+	return f, nil
+}
+
+func (f *frontend) setupListener(ctx context.Context) error {
+	l, err := f.env.Listen()
+	if err != nil {
+		return err
 	}
 
 	key, certs, err := f.env.GetCertificateSecret(ctx, env.RPServerSecretName)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	config := &tls.Config{
@@ -125,8 +131,7 @@ func NewFrontend(ctx context.Context, baseLog *logrus.Entry, _env env.Interface,
 	f.l = tls.NewListener(l, config)
 
 	f.ready.Store(true)
-
-	return f, nil
+	return nil
 }
 
 func (f *frontend) unauthenticatedRoutes(r *mux.Router) {

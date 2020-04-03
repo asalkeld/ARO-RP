@@ -16,13 +16,11 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/ARO-RP/pkg/api"
 	v20200430 "github.com/Azure/ARO-RP/pkg/api/v20200430"
 	"github.com/Azure/ARO-RP/pkg/database"
 	"github.com/Azure/ARO-RP/pkg/env"
-	"github.com/Azure/ARO-RP/pkg/metrics/noop"
 	"github.com/Azure/ARO-RP/pkg/util/clientauthorizer"
 	mock_clusterdata "github.com/Azure/ARO-RP/pkg/util/mocks/clusterdata"
 	mock_database "github.com/Azure/ARO-RP/pkg/util/mocks/database"
@@ -207,7 +205,9 @@ func TestListOpenShiftCluster(t *testing.T) {
 
 					tt.mocks(controller, openshiftClusters, enricher, listPrefix)
 
-					f, err := NewFrontend(ctx, logrus.NewEntry(logrus.StandardLogger()), env, &database.Database{OpenShiftClusters: openshiftClusters}, api.APIs, &noop.Noop{}, nil)
+					f, err := newTestFrontend(ctx, env, api.APIs, &database.Database{
+						OpenShiftClusters: openshiftClusters,
+					}, nil, nil)
 					if err != nil {
 						t.Fatal(err)
 					}

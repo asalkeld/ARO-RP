@@ -17,14 +17,12 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/ARO-RP/pkg/api"
 	v20200430 "github.com/Azure/ARO-RP/pkg/api/v20200430"
 	"github.com/Azure/ARO-RP/pkg/database"
 	"github.com/Azure/ARO-RP/pkg/database/cosmosdb"
 	"github.com/Azure/ARO-RP/pkg/env"
-	"github.com/Azure/ARO-RP/pkg/metrics/noop"
 	"github.com/Azure/ARO-RP/pkg/util/bucket"
 	"github.com/Azure/ARO-RP/pkg/util/clientauthorizer"
 	mock_clusterdata "github.com/Azure/ARO-RP/pkg/util/mocks/clusterdata"
@@ -691,11 +689,11 @@ func TestPutOrPatchOpenShiftCluster(t *testing.T) {
 					},
 				}, nil)
 
-			f, err := NewFrontend(ctx, logrus.NewEntry(logrus.StandardLogger()), env, &database.Database{
+			f, err := newTestFrontend(ctx, env, apis, &database.Database{
 				AsyncOperations:   asyncOperations,
 				OpenShiftClusters: openShiftClusters,
 				Subscriptions:     subscriptions,
-			}, apis, &noop.Noop{}, nil)
+			}, nil, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

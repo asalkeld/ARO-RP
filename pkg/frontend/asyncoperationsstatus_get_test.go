@@ -17,13 +17,11 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/ARO-RP/pkg/api"
 	"github.com/Azure/ARO-RP/pkg/database"
 	"github.com/Azure/ARO-RP/pkg/database/cosmosdb"
 	"github.com/Azure/ARO-RP/pkg/env"
-	"github.com/Azure/ARO-RP/pkg/metrics/noop"
 	"github.com/Azure/ARO-RP/pkg/util/clientauthorizer"
 	mock_database "github.com/Azure/ARO-RP/pkg/util/mocks/database"
 	utiltls "github.com/Azure/ARO-RP/pkg/util/tls"
@@ -237,10 +235,10 @@ func TestGetAsyncOperationsStatus(t *testing.T) {
 
 			tt.mocks(openshiftClusters, asyncOperations)
 
-			f, err := NewFrontend(ctx, logrus.NewEntry(logrus.StandardLogger()), env, &database.Database{
-				AsyncOperations:   asyncOperations,
+			f, err := newTestFrontend(ctx, env, api.APIs, &database.Database{
 				OpenShiftClusters: openshiftClusters,
-			}, api.APIs, &noop.Noop{}, nil)
+				AsyncOperations:   asyncOperations,
+			}, nil, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

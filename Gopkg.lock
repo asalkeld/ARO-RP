@@ -18,10 +18,11 @@
   revision = "3a14fb1c4737b3995174c5f4d6d08a348b9b4180"
 
 [[projects]]
-  digest = "1:9ca2dd340d23767b05c19bda3f6a9ef0e64e81af56e038735c6e3485def7ec9b"
+  digest = "1:ffde4d4a8de3e0b3b67fa4963c3d4853fd5fc7bcb8e20a076326e7b1b2b41686"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "profiles/latest/dns/mgmt/dns",
+    "profiles/latest/resources/mgmt/features",
     "profiles/latest/resources/mgmt/subscriptions",
     "services/compute/mgmt/2018-10-01/compute",
     "services/compute/mgmt/2019-03-01/compute",
@@ -37,8 +38,8 @@
     "services/network/mgmt/2019-07-01/network",
     "services/preview/authorization/mgmt/2018-09-01-preview/authorization",
     "services/privatedns/mgmt/2018-09-01/privatedns",
-    "services/resources/mgmt/2018-05-01/resources",
     "services/resources/mgmt/2019-06-01/subscriptions",
+    "services/resources/mgmt/2019-07-01/features",
     "services/storage/mgmt/2019-04-01/storage",
     "storage",
     "version",
@@ -1917,6 +1918,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/AlekSi/gocov-xml",
+    "github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/features",
     "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute",
     "github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2019-06-01-preview/containerregistry",
     "github.com/Azure/azure-sdk-for-go/services/cosmos-db/mgmt/2015-04-08/documentdb",
@@ -1929,7 +1931,7 @@
     "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-07-01/network",
     "github.com/Azure/azure-sdk-for-go/services/preview/authorization/mgmt/2018-09-01-preview/authorization",
     "github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns",
-    "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources",
+    "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-07-01/features",
     "github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2019-04-01/storage",
     "github.com/Azure/azure-sdk-for-go/storage",
     "github.com/Azure/go-autorest/autorest",

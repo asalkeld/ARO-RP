@@ -23,7 +23,7 @@ import (
 	"github.com/Azure/ARO-RP/pkg/frontend/kubeactions"
 	"github.com/Azure/ARO-RP/pkg/frontend/middleware"
 	"github.com/Azure/ARO-RP/pkg/metrics"
-	"github.com/Azure/ARO-RP/pkg/util/azureclient/mgmt/resources"
+	"github.com/Azure/ARO-RP/pkg/util/azureclient/mgmt/features"
 	"github.com/Azure/ARO-RP/pkg/util/bucket"
 	"github.com/Azure/ARO-RP/pkg/util/clusterdata"
 	"github.com/Azure/ARO-RP/pkg/util/heartbeat"
@@ -45,7 +45,7 @@ type frontend struct {
 
 	ocEnricher  clusterdata.OpenShiftClusterEnricher
 	kubeActions kubeactions.Interface
-	resources   resources.ResourcesClient
+	resources   features.ResourcesClient
 
 	l net.Listener
 	s *http.Server
@@ -66,7 +66,7 @@ func NewFrontend(ctx context.Context, baseLog *logrus.Entry, _env env.Interface,
 	if err != nil {
 		return nil, err
 	}
-	resourcesClient := resources.NewResourcesClient(_env.SubscriptionID(), fpAuthorizer)
+	resourcesClient := features.NewResourcesClient(_env.SubscriptionID(), fpAuthorizer)
 
 	f := &frontend{
 		baseLog:     baseLog,

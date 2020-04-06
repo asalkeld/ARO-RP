@@ -15,7 +15,7 @@ import (
 	"strings"
 	"testing"
 
-	mgmtresources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-07-01/features"
+	mgmtfeatures "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-07-01/features"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
@@ -114,8 +114,8 @@ func TestAdminListResourcesList(t *testing.T) {
 				openshiftClusters.EXPECT().Get(gomock.Any(), strings.ToLower(tt.resourceID)).
 					Return(clusterDoc, nil)
 
-				res := &mgmtresources.ResourceListResult{
-					Value: &[]mgmtresources.GenericResourceExpanded{
+				res := &mgmtfeatures.ResourceListResult{
+					Value: &[]mgmtfeatures.GenericResourceExpanded{
 						{
 							Location: to.StringPtr("eastus2"),
 							Kind:     to.StringPtr("test2"),

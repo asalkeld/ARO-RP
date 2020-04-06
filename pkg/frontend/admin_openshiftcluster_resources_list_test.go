@@ -18,40 +18,16 @@ import (
 	mgmtfeatures "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-07-01/features"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
-	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/ARO-RP/pkg/api"
 	"github.com/Azure/ARO-RP/pkg/database"
 	"github.com/Azure/ARO-RP/pkg/env"
-	"github.com/Azure/ARO-RP/pkg/frontend/kubeactions"
-	"github.com/Azure/ARO-RP/pkg/metrics/noop"
-	"github.com/Azure/ARO-RP/pkg/util/bucket"
 	"github.com/Azure/ARO-RP/pkg/util/clientauthorizer"
-	"github.com/Azure/ARO-RP/pkg/util/clusterdata"
-	mock_resources "github.com/Azure/ARO-RP/pkg/util/mocks/azureclient/mgmt/resources"
+	mockfeatures "github.com/Azure/ARO-RP/pkg/util/mocks/azureclient/mgmt/features"
 	mock_database "github.com/Azure/ARO-RP/pkg/util/mocks/database"
 	utiltls "github.com/Azure/ARO-RP/pkg/util/tls"
 	"github.com/Azure/ARO-RP/test/util/listener"
 )
-
-func newTestFrontend(ctx context.Context, _env env.Interface, apis map[string]*api.Version, db *database.Database, ka kubeactions.Interface, mr *mock_resources.MockResourcesClient) (Runnable, error) {
-	f := &frontend{
-		baseLog:         logrus.NewEntry(logrus.StandardLogger()),
-		env:             _env,
-		db:              db,
-		apis:            apis,
-		m:               &noop.Noop{},
-		kubeActions:     ka,
-		resources:       mr,
-		bucketAllocator: &bucket.Random{},
-	}
-	f.ocEnricher = clusterdata.NewBestEffortEnricher(f.baseLog, _env)
-	err := f.setupListener(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return f, nil
-}
 
 func TestAdminListResourcesList(t *testing.T) {
 	mockSubID := "00000000-0000-0000-0000-000000000000"
@@ -87,7 +63,7 @@ func TestAdminListResourcesList(t *testing.T) {
 	type test struct {
 		name           string
 		resourceID     string
-		mocks          func(*test, *mock_database.MockOpenShiftClusters, *mock_resources.MockResourcesClient)
+		mocks          func(*test, *mock_database.MockOpenShiftClusters, *mockfeatures.MockResourcesClient)
 		wantStatusCode int
 		wantResponse   func() []byte
 		wantError      string
@@ -97,7 +73,7 @@ func TestAdminListResourcesList(t *testing.T) {
 		{
 			name:       "basic coverage",
 			resourceID: fmt.Sprintf("/subscriptions/%s/resourcegroups/resourceGroup/providers/Microsoft.RedHatOpenShift/openShiftClusters/resourceName", mockSubID),
-			mocks: func(tt *test, openshiftClusters *mock_database.MockOpenShiftClusters, resources *mock_resources.MockResourcesClient) {
+			mocks: func(tt *test, openshiftClusters *mock_database.MockOpenShiftClusters, resources *mockfeatures.MockResourcesClient) {
 				clusterDoc := &api.OpenShiftClusterDocument{
 					OpenShiftCluster: &api.OpenShiftCluster{
 						ID:   "fakeClusterID",
@@ -123,7 +99,7 @@ func TestAdminListResourcesList(t *testing.T) {
 						},
 					},
 				}
-				resources.EXPECT().ListWithDetails(gomock.Any(), "resourceGroup eq 'test-cluster'", "", nil).Return(*res, nil) // TODO
+				resources.EXPECT().List(gomock.Any(), "resourceGroup eq 'test-cluster'", "", nil).Return(*res, nil) // TODO
 			},
 			wantStatusCode: http.StatusOK,
 			wantResponse: func() []byte {
@@ -147,7 +123,7 @@ func TestAdminListResourcesList(t *testing.T) {
 			controller := gomock.NewController(t)
 			defer controller.Finish()
 
-			resourcesClient := mock_resources.NewMockResourcesClient(controller)
+			resourcesClient := mockfeatures.NewMockResourcesClient(controller)
 			openshiftClusters := mock_database.NewMockOpenShiftClusters(controller)
 			tt.mocks(tt, openshiftClusters, resourcesClient)
 

@@ -11,12 +11,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	mgmtfeatures "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-07-01/features"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/ARO-RP/pkg/api"
 	"github.com/Azure/ARO-RP/pkg/database/cosmosdb"
 	"github.com/Azure/ARO-RP/pkg/frontend/middleware"
+	"github.com/Azure/ARO-RP/pkg/util/azureclient"
 	"github.com/Azure/ARO-RP/pkg/util/stringutils"
 )
 
@@ -25,9 +27,9 @@ func (f *frontend) listAdminOpenShiftClusterResources(w http.ResponseWriter, r *
 	log := ctx.Value(middleware.ContextKeyLog).(*logrus.Entry)
 	r.URL.Path = filepath.Dir(r.URL.Path)
 
-	jb, err := f._listAdminOpenShiftClusterResources(ctx, r)
+	b, err := f._listAdminOpenShiftClusterResources(ctx, r)
 
-	reply(log, w, nil, jb, err)
+	reply(log, w, nil, b, err)
 }
 
 func (f *frontend) _listAdminOpenShiftClusterResources(ctx context.Context, r *http.Request) ([]byte, error) {
@@ -43,9 +45,34 @@ func (f *frontend) _listAdminOpenShiftClusterResources(ctx context.Context, r *h
 	}
 
 	resourceGroup := stringutils.LastTokenByte(doc.OpenShiftCluster.Properties.ClusterProfile.ResourceGroupID, '/')
-	res, err := f.resources.ListWithDetails(ctx, fmt.Sprintf("resourceGroup eq '%s'", resourceGroup), "", nil)
+	resources, err := f.resources.List(ctx, fmt.Sprintf("resourceGroup eq '%s'", resourceGroup), "", nil)
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(res)
+
+	result := mgmtfeatures.ResourceListResult{Value: &[]mgmtfeatures.GenericResourceExpanded{}}
+	if resources.Value == nil {
+		return nil, nil
+	}
+	for _, res := range *resources.Value {
+		if res.ID != nil && res.Type != nil {
+			code := azureclient.GetCodeFromType(*res.Type)
+			gr, err := f.resources.GetByID(ctx, *res.ID, azureclient.APIVersions[code])
+			if err == nil {
+				res.Name = gr.Name
+				res.Type = gr.Type
+				res.Location = gr.Location
+				res.Kind = gr.Kind
+				res.Identity = gr.Identity
+				res.Properties = gr.Properties
+				res.Plan = gr.Plan
+				res.Tags = gr.Tags
+				res.Sku = gr.Sku
+				res.ManagedBy = gr.ManagedBy
+			}
+		}
+		*result.Value = append(*result.Value, res)
+	}
+
+	return json.Marshal(result)
 }

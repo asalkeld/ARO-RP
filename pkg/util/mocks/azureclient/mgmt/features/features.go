@@ -220,6 +220,21 @@ func (m *MockResourcesClient) EXPECT() *MockResourcesClientMockRecorder {
 	return m.recorder
 }
 
+// GetByID mocks base method
+func (m *MockResourcesClient) GetByID(arg0 context.Context, arg1, arg2 string) (features.GenericResource, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByID", arg0, arg1, arg2)
+	ret0, _ := ret[0].(features.GenericResource)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByID indicates an expected call of GetByID
+func (mr *MockResourcesClientMockRecorder) GetByID(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockResourcesClient)(nil).GetByID), arg0, arg1, arg2)
+}
+
 // List mocks base method
 func (m *MockResourcesClient) List(arg0 context.Context, arg1, arg2 string, arg3 *int32) (features.ResourceListResult, error) {
 	m.ctrl.T.Helper()

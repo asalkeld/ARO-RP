@@ -13,7 +13,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 
 	aro "github.com/Azure/ARO-RP/operator/apis/aro.openshift.io/v1alpha1"
@@ -22,7 +21,7 @@ import (
 
 type StatusReporter struct {
 	arocli aroclient.AroV1alpha1Interface
-	name   types.NamespacedName
+	name   string
 	log    *logrus.Entry
 }
 
@@ -37,11 +36,11 @@ var (
 	}
 )
 
-func NewStatusReporter(log *logrus.Entry, arocli aroclient.AroV1alpha1Interface, namespace, name string) *StatusReporter {
+func NewStatusReporter(log *logrus.Entry, arocli aroclient.AroV1alpha1Interface, name string) *StatusReporter {
 	return &StatusReporter{
 		log:    log.WithField("manager", "StatusReporter"),
 		arocli: arocli,
-		name:   types.NamespacedName{Name: name, Namespace: namespace},
+		name:   name,
 	}
 }
 
@@ -57,7 +56,7 @@ func (r *StatusReporter) AddReconcileAction(ctx context.Context, action, reason 
 	time := metav1.Now()
 
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		co, err := r.arocli.Clusters(r.name.Namespace).Get(r.name.Name, v1.GetOptions{})
+		co, err := r.arocli.Clusters().Get(r.name, v1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -68,9 +67,9 @@ func (r *StatusReporter) AddReconcileAction(ctx context.Context, action, reason 
 				Action:         action,
 				Reason:         reason}), 10)
 
-		setStaticStatus(&co.Status, r.name.Namespace)
+		setStaticStatus(&co.Status)
 
-		_, err = r.arocli.Clusters(r.name.Namespace).Update(co)
+		_, err = r.arocli.Clusters().Update(co)
 		return err
 	})
 }
@@ -82,7 +81,7 @@ func (r *StatusReporter) SetNoInternetConnection(ctx context.Context, connection
 		msg += ": " + connectionErr.Error()
 	}
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		co, err := r.arocli.Clusters(r.name.Namespace).Get(r.name.Name, v1.GetOptions{})
+		co, err := r.arocli.Clusters().Get(r.name, v1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -94,9 +93,9 @@ func (r *StatusReporter) SetNoInternetConnection(ctx context.Context, connection
 			Reason:             "CheckFailed",
 			LastTransitionTime: time})
 
-		setStaticStatus(&co.Status, r.name.Namespace)
+		setStaticStatus(&co.Status)
 
-		_, err = r.arocli.Clusters(r.name.Namespace).Update(co)
+		_, err = r.arocli.Clusters().Update(co)
 		return err
 	})
 }
@@ -104,7 +103,7 @@ func (r *StatusReporter) SetNoInternetConnection(ctx context.Context, connection
 func (r *StatusReporter) SetInternetConnected(ctx context.Context) error {
 	time := metav1.Now()
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		co, err := r.arocli.Clusters(r.name.Namespace).Get(r.name.Name, v1.GetOptions{})
+		co, err := r.arocli.Clusters().Get(r.name, v1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -116,17 +115,17 @@ func (r *StatusReporter) SetInternetConnected(ctx context.Context) error {
 			Reason:             "CheckDone",
 			LastTransitionTime: time})
 
-		setStaticStatus(&co.Status, r.name.Namespace)
+		setStaticStatus(&co.Status)
 
-		_, err = r.arocli.Clusters(r.name.Namespace).Update(co)
+		_, err = r.arocli.Clusters().Update(co)
 		return err
 	})
 }
 
-func setStaticStatus(status *aro.ClusterStatus, namespace string) {
+func setStaticStatus(status *aro.ClusterStatus) {
 	if len(status.RelatedObjects) == 0 {
 		status.RelatedObjects = []corev1.ObjectReference{
-			{Kind: "Namespace", Name: namespace},
+			{Kind: "Namespace", Name: OperatorNamespace},
 			{Kind: "Secret", Name: "pull-secret", Namespace: "openshift-config"},
 		}
 	}

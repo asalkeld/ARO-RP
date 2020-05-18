@@ -93,7 +93,7 @@ func (r *PullsecretReconciler) Reconcile(request ctrl.Request) (ctrl.Result, err
 	}
 
 	if changed {
-		sr := NewStatusReporter(r.Log, r.AROCli, request.Namespace, request.Name)
+		sr := NewStatusReporter(r.Log, r.AROCli, request.Name)
 		reason := "the ACR repository token in the pull secret was not correct"
 		if isCreate {
 			reason = "the pull secret was deleted"

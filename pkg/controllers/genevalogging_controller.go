@@ -56,7 +56,6 @@ func (r *GenevaloggingReconciler) Reconcile(request ctrl.Request) (ctrl.Result, 
 		}
 		newCert = certs.DeepCopy()
 		newCert.Namespace = instance.Spec.GenevaLogging.Namespace
-		newCert.ResourceVersion = ""
 	}
 
 	gl := genevalogging.NewForOperator(r.Log, &instance.Spec, r.Kubernetescli, r.Securitycli, newCert)

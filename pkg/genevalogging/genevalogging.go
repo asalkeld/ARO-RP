@@ -106,6 +106,7 @@ func (g *genevaLogging) applyConfigMap(cm *v1.ConfigMap) error {
 }
 
 func (g *genevaLogging) applySecret(s *v1.Secret) error {
+	s.ResourceVersion = ""
 	_, err := g.cli.CoreV1().Secrets(s.Namespace).Create(s)
 	if !errors.IsAlreadyExists(err) {
 		return err

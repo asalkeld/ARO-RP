@@ -11,15 +11,12 @@ metadata:
   creationTimestamp: null
   name: clusters.aro.openshift.io
 spec:
-  conversion:
-    strategy: None
   group: aro.openshift.io
   names:
     kind: Cluster
     listKind: ClusterList
     plural: clusters
     singular: cluster
-  preserveUnknownFields: true
   scope: Namespaced
   validation:
     openAPIV3Schema:
@@ -100,6 +97,28 @@ spec:
                 required:
                 - status
                 - type
+                type: object
+              type: array
+            operatorVersion:
+              type: string
+            reconsileHistory:
+              description: ReconsileHistory is a list of the last 10 reconcile actions
+                that were taken
+              items:
+                properties:
+                  action:
+                    description: The action that was taken
+                    type: string
+                  completionTime:
+                    format: date-time
+                    type: string
+                  reason:
+                    description: The reason why the action was taken
+                    type: string
+                required:
+                - action
+                - completionTime
+                - reason
                 type: object
               type: array
             relatedObjects:

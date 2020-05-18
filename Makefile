@@ -55,8 +55,8 @@ client: generate
 
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 generate: controller-gen kustomize
-	# build the operator's rbac based on in-code tags (search for "+kubebuilder:rbac")
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/controllers/..." output:crd:artifacts:config=operator/config/crd/bases output:dir=operator/config/resources
+	# build the operator's crd and rbac based on in-code tags (search for "+kubebuilder:")
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./operator/..." paths="./pkg/controllers/..." output:crd:artifacts:config=operator/config/crd/bases output:rbac:artifacts:config=operator/config/resources
 	# build the operator's static resources
 	$(KUSTOMIZE) build operator/config/default > operator/deploy/resources.yaml
 	# build the operator's custom client (doesn't seem to work within a generate header)

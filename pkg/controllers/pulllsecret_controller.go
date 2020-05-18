@@ -4,6 +4,7 @@ package controllers
 // Licensed under the Apache License 2.0.
 
 import (
+	"context"
 	"encoding/base64"
 	"io/ioutil"
 	"os"
@@ -49,8 +50,9 @@ func (r *PullsecretReconciler) Reconcile(request ctrl.Request) (ctrl.Result, err
 
 	r.Log.Info("Reconciling pull-secret")
 
+	changed := false
+	isCreate := false
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		var isCreate bool
 		ps, err := r.Kubernetescli.CoreV1().Secrets(request.Namespace).Get(request.Name, metav1.GetOptions{})
 		switch {
 		case apierrors.IsNotFound(err):
@@ -66,7 +68,7 @@ func (r *PullsecretReconciler) Reconcile(request ctrl.Request) (ctrl.Result, err
 			return err
 		}
 
-		changed, err := r.pullSecretRepair(ps)
+		changed, err = r.pullSecretRepair(ps)
 		if err != nil {
 			return err
 		}
@@ -88,6 +90,18 @@ func (r *PullsecretReconciler) Reconcile(request ctrl.Request) (ctrl.Result, err
 	if err != nil {
 		r.Log.Errorf("Failed to repair the Pull Secret : %v", err)
 		return reconcile.Result{}, err
+	}
+
+	if changed {
+		sr := NewStatusReporter(r.Log, r.AROCli, request.Namespace, request.Name)
+		reason := "the ACR repository token in the pull secret was not correct"
+		if isCreate {
+			reason = "the pull secret was deleted"
+		}
+		err = sr.AddReconcileAction(context.TODO(), "repaired pull-secret", reason)
+		if err != nil {
+			r.Log.Errorf("Failed to record reconciliation action : %v", err)
+		}
 	}
 	r.Log.Info("done, requeueing")
 	return reconcile.Result{}, nil

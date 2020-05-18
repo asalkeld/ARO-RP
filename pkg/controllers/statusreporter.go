@@ -6,6 +6,8 @@ package controllers
 import (
 	"context"
 
+	"github.com/Azure/ARO-RP/pkg/util/version"
+
 	"github.com/operator-framework/operator-sdk/pkg/status"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -43,6 +45,36 @@ func NewStatusReporter(log *logrus.Entry, arocli aroclient.AroV1alpha1Interface,
 	}
 }
 
+func historyShorten(current []aro.ReconsileHistory, limit int) []aro.ReconsileHistory {
+	histLen := len(current)
+	if histLen < 11 {
+		return current
+	}
+	return current[histLen-10 : histLen]
+}
+
+func (r *StatusReporter) AddReconcileAction(ctx context.Context, action, reason string) error {
+	time := metav1.Now()
+
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		co, err := r.arocli.Clusters(r.name.Namespace).Get(r.name.Name, v1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		co.Status.ReconsileHistory = historyShorten(append(co.Status.ReconsileHistory,
+			aro.ReconsileHistory{
+				CompletionTime: &time,
+				Action:         action,
+				Reason:         reason}), 10)
+
+		setStaticStatus(&co.Status, r.name.Namespace)
+
+		_, err = r.arocli.Clusters(r.name.Namespace).Update(co)
+		return err
+	})
+}
+
 func (r *StatusReporter) SetNoInternetConnection(ctx context.Context, connectionErr error) error {
 	time := metav1.Now()
 	msg := "Outgoing connection failed"
@@ -61,9 +93,8 @@ func (r *StatusReporter) SetNoInternetConnection(ctx context.Context, connection
 			Message:            msg,
 			Reason:             "CheckFailed",
 			LastTransitionTime: time})
-		if len(co.Status.RelatedObjects) == 0 {
-			co.Status.RelatedObjects = newRelatedObjects(r.name.Namespace)
-		}
+
+		setStaticStatus(&co.Status, r.name.Namespace)
 
 		_, err = r.arocli.Clusters(r.name.Namespace).Update(co)
 		return err
@@ -84,18 +115,20 @@ func (r *StatusReporter) SetInternetConnected(ctx context.Context) error {
 			Message:            "Outgoing connection successful.",
 			Reason:             "CheckDone",
 			LastTransitionTime: time})
-		if len(co.Status.RelatedObjects) == 0 {
-			co.Status.RelatedObjects = newRelatedObjects(r.name.Namespace)
-		}
+
+		setStaticStatus(&co.Status, r.name.Namespace)
 
 		_, err = r.arocli.Clusters(r.name.Namespace).Update(co)
 		return err
 	})
 }
 
-func newRelatedObjects(namespace string) []corev1.ObjectReference {
-	return []corev1.ObjectReference{
-		{Kind: "Namespace", Name: namespace},
-		{Kind: "Secret", Name: "pull-secret", Namespace: "openshift-config"},
+func setStaticStatus(status *aro.ClusterStatus, namespace string) {
+	if len(status.RelatedObjects) == 0 {
+		status.RelatedObjects = []corev1.ObjectReference{
+			{Kind: "Namespace", Name: namespace},
+			{Kind: "Secret", Name: "pull-secret", Namespace: "openshift-config"},
+		}
 	}
+	status.OperatorVersion = version.GitCommit
 }

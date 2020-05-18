@@ -31,9 +31,28 @@ type ClusterSpec struct {
 	GenevaLogging GenevaLoggingSpec `json:"genevaLogging,omitempty"`
 }
 
+type ReconsileHistory struct {
+	// +kubebuilder:validation:Required
+	// +required
+	CompletionTime *metav1.Time `json:"completionTime"`
+
+	// The action that was taken
+	// +required
+	Action string `json:"action"`
+
+	// The reason why the action was taken
+	// +required
+	Reason string `json:"reason"`
+}
+
 // ClusterStatus defines the observed state of Cluster
 type ClusterStatus struct {
-	Conditions     status.Conditions        `json:"conditions,omitempty"`
+	OperatorVersion string            `json:"operatorVersion,omitempty"`
+	Conditions      status.Conditions `json:"conditions,omitempty"`
+
+	// ReconsileHistory is a list of the last 10 reconcile actions that were taken
+	ReconsileHistory []ReconsileHistory `json:"reconsileHistory,omitempty"`
+
 	RelatedObjects []corev1.ObjectReference `json:"relatedObjects,omitempty"`
 }
 

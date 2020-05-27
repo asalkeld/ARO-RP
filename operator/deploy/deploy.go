@@ -54,7 +54,7 @@ type operator struct {
 	resourceID        string
 	namespace         string
 	imageVersion      string
-	acrToken          string
+	regTokens         map[string]string
 	acrRegName        string
 	acrName           string
 	genevaloggingKey  *rsa.PrivateKey
@@ -69,11 +69,11 @@ type operator struct {
 }
 
 func New(log *logrus.Entry, e env.Interface, oc *api.OpenShiftCluster, cli kubernetes.Interface, seccli securityclient.Interface, arocli aroclient.AroV1alpha1Interface) (Operator, error) {
-	var acrToken string
+	regTokens := map[string]string{}
 	acrRegName := e.ACRName() + ".azurecr.io"
 	for i, rp := range oc.Properties.RegistryProfiles {
 		if rp.Name == acrRegName {
-			acrToken = oc.Properties.RegistryProfiles[i].Username + ":" + string(oc.Properties.RegistryProfiles[i].Password)
+			regTokens[acrRegName] = oc.Properties.RegistryProfiles[i].Username + ":" + string(oc.Properties.RegistryProfiles[i].Password)
 		}
 	}
 	restConfig, err := restconfig.RestConfig(e, oc)
@@ -99,7 +99,7 @@ func New(log *logrus.Entry, e env.Interface, oc *api.OpenShiftCluster, cli kuber
 		namespace:         KubeNamespace,
 		imageVersion:      version.GitCommit,
 		acrName:           e.ACRName(),
-		acrToken:          acrToken,
+		regTokens:         regTokens,
 		acrRegName:        acrRegName,
 		genevaloggingKey:  key,
 		genevaloggingCert: cert,
@@ -272,10 +272,8 @@ func (o *operator) resources(ctx context.Context) ([]runtime.Object, error) {
 				Name:      "pullsecret-tokens",
 				Namespace: o.namespace,
 			},
-			Type: corev1.SecretTypeOpaque,
-			StringData: map[string]string{
-				o.acrRegName: o.acrToken,
-			},
+			Type:       corev1.SecretTypeOpaque,
+			StringData: o.regTokens,
 		},
 		ssc,
 		o.deployment(),
